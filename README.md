@@ -55,10 +55,10 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ##### Project and Tablespace inputs
 
-***PROJECT_NAME*** : Name for transport tablespace project. (REQUIRED INPUT) \
-***DATABASE_NAME*** : Database Name containing the tablespaces. (REQUIRED INPUT) \
-***TABLESPACES*** : List of comma separated transportable tablespaces. (OPTIONAL INPUT) if empty all user tablespaces are added. \
-***SCHEMAS*** : List of comma separated transportable schemas. (OPTIONAL INPUT) if empty all required users are added. None of the schemas should be a common user.
+***PROJECT_NAME*** : (REQUIRED INPUT) Name for transport tablespace project. \
+***DATABASE_NAME*** : (REQUIRED INPUT) Database Name containing the tablespaces. \
+***TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to be transported.  Leave empty to transport all user tablespaces. \
+***SCHEMAS*** : (OPTIONAL INPUT) List of comma separated schemas to be exported. Leave empty to export all non-common schemas.
 
 ##### Database connection inputs
 
@@ -70,7 +70,7 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 ***DBPASSWORD*** : (RUNTIME INPUT) Password for connection to the database. DO NOT provide in the file. Provide as CLI runtime input when prompted. \
 ***DB_VERSION*** : (REQUIRED INPUT) DB Version, supported values are 11g, 12c, 19c, 23ai.
 
-##### Object Storage Service (OSS) inputs ( Required if using OCI Object Storage for migration. Leave them empty if using FSS. )
+##### OCI Object Storage (OSS) inputs 
 
 ***TTS_BACKUP_URL*** : (REQUIRED INPUT) Object storage bucket uri for backup files. \
 ***TTS_BUNDLE_URL*** : (REQUIRED INPUT) Object storage bucket uri for transportable tablespace bundle. \
@@ -82,7 +82,7 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ##### TDE keys inputs
 
-***TDE_WALLET_STORE_PASSWORD*** : (RUNTIME INPUT, REQUIRED only if any of the tablespaces are TDE Encrypted). DO NOT provide in the file. Provide as CLI runtime input when prompted.
+***TDE_WALLET_STORE_PASSWORD*** : (RUNTIME INPUT) Provide TDE wallet store password if any of the tablespaces being transported are encrypted. DO NOT provide in the file. Provide as CLI runtime input when prompted.
 
 ##### Run type inputs 
 
@@ -94,7 +94,7 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ***PARALLELISM*** : (REQUIRED INPUT) Number of channels to be used for backup. \
 
-***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is run. \
+***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is running. If CLUSTER_MODE is TRUE, File System should be mounted to all source database host(s). If CLUSTER_MODE is FALSE, File System should be mounted on the host where backup utility is run. \
 
 Leave these a blank unless really needed.
 
@@ -265,10 +265,10 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ##### Project and Tablespace inputs
 
-***PROJECT_NAME*** : Name for transport tablespace project. (REQUIRED INPUT) \
-***DATABASE_NAME*** : Database Name containing the tablespaces. (REQUIRED INPUT) \
-***TABLESPACES*** : List of comma separated transportable tablespaces. (OPTIONAL INPUT) if empty all user tablespaces are added. \
-***SCHEMAS*** : List of comma separated transportable schemas. (OPTIONAL INPUT) if empty all required users are added. None of the schemas should be a common user.
+***PROJECT_NAME*** : (REQUIRED INPUT) Name for transport tablespace project. \
+***DATABASE_NAME*** : (REQUIRED INPUT) Database Name containing the tablespaces. \
+***TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to be transported.  Leave empty to transport all user tablespaces. \
+***SCHEMAS*** : (OPTIONAL INPUT) List of comma separated schemas to be exported. Leave empty to export all non-common schemas.
 
 ##### Database connection inputs
 
@@ -280,13 +280,13 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 ***DBPASSWORD*** : (RUNTIME INPUT) Password for connection to the database. DO NOT provide in the file. Provide as CLI runtime input when prompted. \
 ***DB_VERSION*** : (REQUIRED INPUT) DB Version, supported values are 11g, 12c, 19c, 23ai.
 
-##### File Storage Service (FSS) inputs ( Required if using FSS for migration. Leave them empty if using OSS. )
-***TTS_FSS_CONFIG*** : (REQUIRED INPUT) FSS configuration should given in the format FSS:\<FIle System Name\>:\<FQDN of Mount Target\>:\<Export Path\> \
-***TTS_FSS_MOUNT_DIR*** : (REQUIRED INPUT) Absolute path where file system was mounted on source database host(s)
+##### File Storage Service (FSS) inputs
+***TTS_FSS_CONFIG*** : (REQUIRED INPUT) FSS configuration should be given in the format FSS:\<FIle System Name\>:\<FQDN of Mount Target\>:\<Export Path\>. \
+***TTS_FSS_MOUNT_DIR*** : (REQUIRED INPUT) Absolute path where file system was mounted on source database host(s).
 
 ##### TDE keys inputs
 
-***TDE_WALLET_STORE_PASSWORD*** : (RUNTIME INPUT, REQUIRED only if any of the tablespaces are TDE Encrypted). DO NOT provide in the file. Provide as CLI runtime input when prompted.
+***TDE_WALLET_STORE_PASSWORD*** : (RUNTIME INPUT) Provide TDE wallet store password if any of the tablespaces being transported are encrypted. DO NOT provide in the file. Provide as CLI runtime input when prompted.
 
 ##### Run type inputs 
 
@@ -298,7 +298,7 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ***PARALLELISM*** : (REQUIRED INPUT) Number of channels to be used for backup. \
 
-***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is run. \
+***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is running. If CLUSTER_MODE is TRUE, File System should be mounted to all source database host(s). If CLUSTER_MODE is FALSE, File System should be mounted on the host where backup utility is run. \
 
 Leave these a blank unless really needed.
 
@@ -420,4 +420,3 @@ If user is performing an incremental migration operation, repeat Backup Tablespa
 
 The operation will trigger the transport tablespaces job on the database.
 The operation will trigger the transport tablespaces job on the database.
-
