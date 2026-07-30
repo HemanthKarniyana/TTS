@@ -1,5 +1,16 @@
 # Migrate Databases to Autonomous AI Database using Transportable Tablespaces
 
+## TTS Backup Utility Latest release
+
+**26.7.5.1** (28 Jul 2026)
+
+Download all files from the [`26.7.5.1/`](./26.7.5.1/) directory and the repository-level [`version.txt`](./version.txt).
+
+Download all files from the [`26.7.5.1/`](./26.7.5.1/) directory, including `version.txt`, before running the utility.
+
+Verify the installed utility version: `python3 tts-backup.py --version`
+
+
 Transportable Tablespaces feature can be used to migrate Oracle database tablespaces from customer on-premise or another Oracle Database Cloud Service into Oracle Autonomous AI Database Cloud Service. User tablespaces along with the necessary schemas can be migrated using the Transportable Tablespaces mechanism. 
 
 Transportable Tablespaces mechanism uses RMAN Backup/Restore and Data Pump Export/Import to transport data and metadata between source databse and Autonomous AI Database. Customers can migrate both bigfile and smallfile tabalespaces. Tablespaces in source database be can encrypted or unencrypted. Migration can be done in full or incremental modes. Customers can use Oracle Cloud Infrastructure (OCI) Object Storage or File Storage Service (FSS) as intermediary for the migration. Source database can be of version 11g or higher. Tablespaces can be migrated to Oracle Autonomous AI Database version 19c or 23ai.
