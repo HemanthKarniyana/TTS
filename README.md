@@ -4,7 +4,7 @@
 
 **26.7.5.1** (28 Jul 2026)
 
-Download all files from the [`26.7.5.1/`](./26.7.5.1/) directory and the repository-level [`version.txt`](./version.txt).
+Download all files from the [`26.5.7.1/`](./26.5.7.1/) directory and the repository-level [`version.txt`](./version.txt).
 
 Download all files from the [`26.7.5.1/`](./26.7.5.1/) directory, including `version.txt`, before running the utility.
 
