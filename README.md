@@ -4,12 +4,9 @@
 
 **26.7.5.1** (28 Jul 2026)
 
-Download all files from the [`26.5.7.1/`](./26.5.7.1/) directory and the repository-level [`version.txt`](./version.txt).
-
-Download all files from the [`26.7.5.1/`](./26.7.5.1/) directory, including `version.txt`, before running the utility.
+Download all files from the [`26.5.7.1/`](./26.5.7.1/) directory and the repository-level [`version.txt`](./version.txt), before running the utility.
 
 Verify the installed utility version: `python3 tts-backup.py --version`
-
 
 Transportable Tablespaces feature can be used to migrate Oracle database tablespaces from customer on-premise or another Oracle Database Cloud Service into Oracle Autonomous AI Database Cloud Service. User tablespaces along with the necessary schemas can be migrated using the Transportable Tablespaces mechanism. 
 
@@ -56,8 +53,8 @@ Note - User should have read and write access to the object storage buckets.
 #### Pre-requisites
 
 - Create a Project Directory that will used as staging location on the host running the source database.
-- Download Oracle Database Backup Cloud Module to the Project Directory. Unzip the downloaded opc_installer.zip in the project directory.
-- Download Transportable Tablespaces Backup Utility files to the project directory.
+- Download [Oracle Database Backup Cloud Module](https://www.oracle.com/database/technologies/oracle-cloud-backup-downloads.html) to the Project Directory. Unzip the downloaded opc_installer.zip in the project directory.
+- Download [Transportable Tablespaces Backup Utility](https://github.com/oracle-devrel/oracle-autonomous-database-samples/tree/main/migration-tools/tts-backup-python) files to the project directory.
 - Provide inputs for backup in the tts-backup-env.txt file.
 
 #### Inputs to Backup Utility
@@ -68,8 +65,10 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ***PROJECT_NAME*** : (REQUIRED INPUT) Name for transport tablespace project. \
 ***DATABASE_NAME*** : (REQUIRED INPUT) Database Name containing the tablespaces. \
-***TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to be transported.  Leave empty to transport all user tablespaces. \
-***SCHEMAS*** : (OPTIONAL INPUT) List of comma separated schemas to be exported. Leave empty to export all non-common schemas.
+***TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to be transported. Leave empty to transport all user tablespaces. Cannot be used with EXCLUDE_TABLESPACES. \
+***EXCLUDE_TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to exclude when TABLESPACES is not provided. Cannot be used with TABLESPACES. \
+***SCHEMAS*** : (OPTIONAL INPUT) Comma-separated list of schemas to export. Leave empty to export the discovered local schemas. Cannot be used with EXCLUDE_SCHEMAS. Use plain schema names for normal schema export, and use source:target entries to remap supported common-user objects into a local target schema. Example: USER1,USER2,C##APP:APP_LOCAL \
+***EXCLUDE_SCHEMAS*** : (OPTIONAL INPUT) List of comma separated schemas to exclude when SCHEMAS is not provided. Cannot be used with SCHEMAS.
 
 ##### Database connection inputs
 
@@ -103,9 +102,9 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ##### Performance inputs     
 
-***PARALLELISM*** : (REQUIRED INPUT) Number of channels to be used for backup. \
+***PARALLELISM*** : (REQUIRED INPUT) Number of channels to be used for backup.
 
-***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is running. If CLUSTER_MODE is TRUE, File System should be mounted to all source database host(s). If CLUSTER_MODE is FALSE, File System should be mounted on the host where backup utility is run. \
+***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is run.
 
 Leave these a blank unless really needed.
 
@@ -123,8 +122,13 @@ Leave these a blank unless really needed.
 
 ***DVREALM_USER*** - (OPTIONAL INPUT) Required only if Database Vault is enabled and configured in the source database. Specify a Database Vault realm owner or authorized user required to access objects protected by Database Vault during the backup process. If not provided and Database Vault is enabled, backup will fail with an error.
 
-***DVREALM_PASSWORD*** - (OPTIONAL INPUT) Required only if Database Vault is enabled and configured in the source.Password for the specified DVREALM_USER. If not provided and Database Vault is enabled, backup will fail with an error.
+***DVREALM_PASSWORD*** - (RUNTIME INPUT) Required only if Database Vault is enabled and configured in the source. Password for the specified DVREALM_USER. If not provided and Database Vault is enabled, backup will fail with an error. Provide as CLI runtime input when prompted. This prompt appears only if DVREALM_USER is provided
 
+##### Optional tool behavior inputs
+
+***IGNORE_NON_FATAL_ERRORS*** : (OPTIONAL INPUT) Accepted values TRUE/true or FALSE/false. When set to TRUE, logical object validation findings that identify objects not transported are reported but do not stop the backup. If not provided, value defaults to FALSE.
+
+***JDK8_PATH*** : (OPTIONAL INPUT) Path to a JDK 8 installation. Configure this only when the OCI installer fails with the default ORACLE_HOME JDK and the tool needs to retry using JDK 8. Leave empty unless needed.
 
 **Backup Utility Sample Inputs**
 ```
@@ -186,7 +190,12 @@ Leave these a blank unless really needed.
   TRANSPORT_TABLES_PROTECTED_BY_OLS_POLICIES=FALSE
   TRANSPORT_DB_PROTECTED_BY_DATABASE_VAULT=FALSE
   DVREALM_USER=
-  DVREALM_PASSWORD=
+  
+  ################################################################################
+  ###                     Optional tool behavior inputs                         ###
+  ################################################################################
+  IGNORE_NON_FATAL_ERRORS=FALSE
+  JDK8_PATH=
 ```
 
 Run the TTS Backup Tool from the project directory as below. User will be prompted for database password and optional TDE wallet store password.
@@ -194,13 +203,21 @@ Run the TTS Backup Tool from the project directory as below. User will be prompt
 **Run Backup Utility**
 
 ```
-  $ python3 tts-backup.py 
-  Enter value for required variable DBPASSWORD: Test
-  Enter value for optional variable TDE_WALLET_STORE_PASSWORD 
+  $ python3 tts-backup.py 
+  Enter database password: Test
+  Enter TDE wallet store password (optional) 
   Required only if any of the tablespaces are TDE encrypted (leave empty and press Enter if not applicable):
 ```
 
 The tool will take backups of the tablespace datafiles and create a metadata bundle. Both backups and the bundle will be uploaded to the provided OCI Object Storage buckets or FSS Mount Targets. Backup Utility will output an URL to OCI Object Storage metadata bundle or FSS Mount Target path for metadata bundle. User should note the given URL/Path as that will be needed as migration input when creating Autonomous AI Database for the migration.
+
+**TTS Backup Utility Version**
+
+To check the version of the TTS Backup Utility being used, run the command below
+
+```
+  $ python3 tts-backup.py --version
+```
 
 ### Create Dynamic Group and Policy
 
@@ -233,7 +250,7 @@ The operation will first create the database and then trigger migration operatio
 
 ### Incremental Migration
 
-If user is performing an incremental migration operation, repeat Backup Tablespaces step at source database for each incremental using the same set of inputs. Backup Utility will output a new OCI Object Storage URL / FSS Mount Target path corresponding to that increment. Use the OCI Object Storage URL to update the Autonomous AI Database created with the first backup above. Set FINAL_BACKUP=TRUE in the input file before performing final backup.
+If user is performing an incremental migration operation, repeat Backup Tablespaces step at source database for each incremental using the same set of inputs. Do not alter the tablespace list during incremental backups. Use the Tablespace list provided during first backup. Backup Utility will output a new OCI Object Storage URL / FSS Mount Target path corresponding to that increment. Use the OCI Object Storage URL to update the Autonomous AI Database created with the first backup above. Set FINAL_BACKUP=TRUE in the input file before performing final backup.
 
 ### Modify Autonomous AI Database with Migration inputs
 
@@ -260,14 +277,14 @@ Transporting Tablespaces involves below high level steps.
    
 ### Configure OCI File System
 
-Create a File System by providing Export and Mount Target information. Refer to [How to Attach a File System to your Autonomous AI Database](https://blogs.oracle.com/datawarehousing/post/attach-file-system-autonomous-database) and use the guidelines for creating the file system. User has to mount the File System to the source database host(s) using the **Mount Commands** provided by the **File System** -> **Export**. Refer to [Mounting File Systems From UNIX-Style Instances](https://docs.oracle.com/en-us/iaas/Content/File/Tasks/mountingunixstyleos.htm) for detailed instructions.
+Create a File System by providing Export and Mount Target information. Refer to [How to Attach a File System to your Autonomous AI Database](https://blogs.oracle.com/datawarehousing/post/attach-file-system-autonomous-database) and use the guidelines for creating the file system. Refer [Configuring VCN Security Rules for File Storage](https://docs.oracle.com/en-us/iaas/Content/File/Tasks/securitylistsfilestorage.htm#Configuring_VCN_Security_Rules_for_File_Storage) for detailed instructions. User has to mount the File System to the source database host(s) using the **Mount Commands** provided by the **File System** -> **Export**. Refer to [Mounting File Systems From UNIX-Style Instances](https://docs.oracle.com/en-us/iaas/Content/File/Tasks/mountingunixstyleos.htm) for detailed instructions.
 
 ### Backup Tablespaces on Source Database
 
 #### Pre-requisites
 
 - Create a Project Directory that will used as staging location on the host running the source database.
-- Download Transportable Tablespaces Backup Utility to the project directory.
+- Download [Transportable Tablespaces Backup Utility](https://github.com/oracle-devrel/oracle-autonomous-database-samples/tree/main/migration-tools/tts-backup-python) to the project directory.
 - Provide inputs for backup in the tts-backup-env.txt file.
 
 #### TTS Backup Tool inputs
@@ -278,8 +295,10 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ***PROJECT_NAME*** : (REQUIRED INPUT) Name for transport tablespace project. \
 ***DATABASE_NAME*** : (REQUIRED INPUT) Database Name containing the tablespaces. \
-***TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to be transported.  Leave empty to transport all user tablespaces. \
-***SCHEMAS*** : (OPTIONAL INPUT) List of comma separated schemas to be exported. Leave empty to export all non-common schemas.
+***TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to be transported. Leave empty to transport all user tablespaces. Cannot be used with EXCLUDE_TABLESPACES. \
+***EXCLUDE_TABLESPACES*** : (OPTIONAL INPUT) List of comma separated tablespaces to exclude when TABLESPACES is not provided. Cannot be used with TABLESPACES. \
+***SCHEMAS*** : (OPTIONAL INPUT) Comma-separated list of schemas to export. Leave empty to export the discovered local schemas. Cannot be used with EXCLUDE_SCHEMAS. Use plain schema names for normal schema export, and use source:target entries to remap supported common-user objects into a local target schema. Example: USER1,USER2,C##APP:APP_LOCAL \
+***EXCLUDE_SCHEMAS*** : (OPTIONAL INPUT) List of comma separated schemas to exclude when SCHEMAS is not provided. Cannot be used with SCHEMAS.
 
 ##### Database connection inputs
 
@@ -301,17 +320,15 @@ Open tts-backup-env.txt file downloaded to the project directory and provide the
 
 ##### Run type inputs 
 
-***FINAL_BACKUP*** : (REQUIRED INPUT) Accepted values TRUE/true or FALSE/false. Value should be TRUE for a non-incremental migration. For incremental migration, value should be FALSE for all incremental backups including the first backup. Set the value to TRUE for final backup of an incremental migration. Tablespaces being transported must be set to READ-ONLY when FINAL_BACKUP is set to TRUE. Tablespace and Schema metadata will be exported only when FINAL_BAKCUP is set to TRUE. \
+***FINAL_BACKUP*** : (REQUIRED INPUT) Accepted values TRUE/true or FALSE/false. Value should be TRUE for a non-incremental migration. For incremental migration, value should be FALSE for all incremental backups including the first backup. Set the value to TRUE for final backup of an incremental migration. Tablespaces being transported must be set to READ-ONLY when FINAL_BACKUP is set to TRUE. Tablespace and Schema metadata will be exported only when FINAL_BAKCUP is set to TRUE. 
 
 ***DRY_RUN*** : (OPTIONAL INPUT) Accepted values TRUE/true or FALSE/false. When set to TRUE, the backup script runs in validation mode only and does not perform the actual backup. Use DRY_RUN to detect potential problems with transport and fix them before running the actual backup. If the input parameter is not provided, value defaults to FALSE.
 
 ##### Performance inputs     
 
-***PARALLELISM*** : (REQUIRED INPUT) Number of channels to be used for backup. \
+***PARALLELISM*** : (REQUIRED INPUT) Number of channels to be used for backup. 
 
-***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is running. If CLUSTER_MODE is TRUE, File System should be mounted to all source database host(s). If CLUSTER_MODE is FALSE, File System should be mounted on the host where backup utility is run. \
-
-Leave these a blank unless really needed.
+***CLUSTER_MODE*** : (OPTIONAL INPUT)  Accepted values TRUE/true or FALSE/false. If set to TRUE, RMAN allocates backup channels across all open RAC instances (channels_per_host = parallelism / num_rac_instances). If the input parameter is not provided or set to FALSE, all the channels (as specified by parallelism) are allocated only on host where backup tool is running. If CLUSTER_MODE is TRUE, File System should be mounted to all source database host(s). If CLUSTER_MODE is FALSE, File System should be mounted on the host where backup utility is run. 
 
 ##### Miscellaneous Inputs
 
@@ -327,7 +344,13 @@ Leave these a blank unless really needed.
 
 ***DVREALM_USER*** - (OPTIONAL INPUT) Required only if Database Vault is enabled and configured in the source database. Specify a Database Vault realm owner or authorized user required to access objects protected by Database Vault during the backup process. If not provided and Database Vault is enabled, backup will fail with an error.
 
-***DVREALM_PASSWORD*** - (OPTIONAL INPUT) Required only if Database Vault is enabled and configured in the source.Password for the specified DVREALM_USER. If not provided and Database Vault is enabled, backup will fail with an error.
+***DVREALM_PASSWORD*** - (RUNTIME INPUT) Required only if Database Vault is enabled and configured in the source. Password for the specified DVREALM_USER. If not provided and Database Vault is enabled, backup will fail with an error. Provide as CLI runtime input when prompted. This prompt appears only if DVREALM_USER is provided
+
+##### Optional tool behavior inputs
+
+***IGNORE_NON_FATAL_ERRORS*** : (OPTIONAL INPUT) Accepted values TRUE/true or FALSE/false. When set to TRUE, logical object validation findings that identify objects not transported are reported but do not stop the backup. If not provided, value defaults to FALSE.
+
+***JDK8_PATH*** : (OPTIONAL INPUT) Path to a JDK 8 installation. Configure this only when the OCI installer fails with the default ORACLE_HOME JDK and the tool needs to retry using JDK 8. Leave empty unless needed.
 
 **Backup Utility Sample Inputs**
 ```
@@ -384,7 +407,12 @@ Leave these a blank unless really needed.
   TRANSPORT_TABLES_PROTECTED_BY_OLS_POLICIES=FALSE
   TRANSPORT_DB_PROTECTED_BY_DATABASE_VAULT=FALSE
   DVREALM_USER=
-  DVREALM_PASSWORD=
+  
+  ################################################################################
+  ###                     Optional tool behavior inputs                         ###
+  ################################################################################
+  IGNORE_NON_FATAL_ERRORS=FALSE
+  JDK8_PATH=
 ```
 
 Run the TTS Backup Tool from the project directory as below. User will be prompted for database password and optional TDE wallet store password.
@@ -392,13 +420,21 @@ Run the TTS Backup Tool from the project directory as below. User will be prompt
 **Run Backup Utility**
 
 ```
-  $ python3 tts-backup.py 
-  Enter value for required variable DBPASSWORD: Test
-  Enter value for optional variable TDE_WALLET_STORE_PASSWORD 
+  $ python3 tts-backup.py 
+  Enter database password: Test
+  Enter TDE wallet store password (optional) 
   Required only if any of the tablespaces are TDE encrypted (leave empty and press Enter if not applicable):
 ```
 
 The tool will take backups of the tablespace datafiles and create a metadata bundle. Both backups and the bundle will be uploaded to backup and metadata directories under the File System - Export path. Backup Utility will output an URL to FSS file path for the metadata bundle. User should note the given FSS file path as that will be needed as migration input when creating Autonomous AI Database for the migration.
+
+**TTS Backup Utility Version**
+
+To check the version of the TTS Backup Utility being used, run the command below
+
+```
+  $ python3 tts-backup.py --version
+```
 
 ### Create Autonomous AI Database with Migration inputs
 
@@ -418,7 +454,7 @@ The operation will first create the database and then trigger migration operatio
 
 ### Incremental Migration
 
-If user is performing an incremental migration operation, repeat Backup Tablespaces step at source database for each incremental using the same set of inputs. Backup Utility will output a new OCI Object Storage URL / FSS Mount Target path corresponding to that increment. Use the FSS file path to update the Autonomous AI Database created with the first backup above. Set FINAL_BACKUP=TRUE in the input file before performing final backup.
+If user is performing an incremental migration operation, repeat Backup Tablespaces step at source database for each incremental using the same set of inputs. Do not alter the tablespace list during incremental backups. Use the Tablespace list provided during first backup. Backup Utility will output a new OCI Object Storage URL / FSS Mount Target path corresponding to that increment. Use the FSS file path to update the Autonomous AI Database created with the first backup above. Set FINAL_BACKUP=TRUE in the input file before performing final backup.
 
 ### Modify Autonomous AI Database with Migration inputs
 
@@ -429,5 +465,4 @@ If user is performing an incremental migration operation, repeat Backup Tablespa
 5.  Specify FSS file path to the metadata bundle as given by Backup Utility for the increment or final backup.
 6.  Click on **Save**.
 
-The operation will trigger the transport tablespaces job on the database.
 The operation will trigger the transport tablespaces job on the database.
